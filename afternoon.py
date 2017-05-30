@@ -6,7 +6,7 @@ import urllib
 import urllib2
 import urlparse
 import base64
-from datetime import datetime
+from datetime import datetime, timedelta
 
 print('Loading function')
 
@@ -14,16 +14,25 @@ dynamodb = boto3.client('dynamodb')
 
 def lambda_handler(event, context):
     print("Received event: " + json.dumps(event, indent=2))
-    bodyJson = event['body-json']
-    command = urlparse.parse_qs(bodyJson, keep_blank_values = True)
 
-    #if command['command'][0] == '/prop':
-    #    resp = prop_handler(command)
-    #else:
-    #    resp = tweet_handler(command)
-    #return resp
+    if 'trigger' in event:
+        handle_trigger(event)
+    else: 
+        bodyJson = event['body-json']
+        command = urlparse.parse_qs(bodyJson, keep_blank_values = True)
+        return hello_handler(command)
 
-    return hello_handler(command)
+def handle_trigger(event):
+    slack_user = event['user']
+    user = get_user(slack_user)
+    json_entries = user.get_toggl_entries()
+    attachments = handle_entries(json_entries)
+    payload = json.dumps({"text": "hey",
+                          "icon_emoji": ":timer_clock:",
+                          "attachments": attachments})
+    webhook = "https://hooks.slack.com/services/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"
+    req = urllib2.Request(webhook, payload)
+    urllib2.urlopen(req).read()
 
 class User(object):
     def __init__(self, slack_user, toggl_api_key, last_verified, last_checked):
@@ -66,7 +75,7 @@ class User(object):
         username = self.toggl_api_key
         password = "api_token"
         base64string = base64.b64encode('%s:%s' % (username, password))
-        start = urllib.quote(self.last_verified)
+        start = urllib.quote(self.since_last_verified())
         req = urllib2.Request("https://www.toggl.com/api/v8/time_entries?start_date=" + start)
         req.add_header('Authorization', "Basic %s" % base64string)
         raw_entries = urllib2.urlopen(req).read()
@@ -75,7 +84,7 @@ class User(object):
 
     def since_last_verified(self):
         if self.last_verified == "never":
-            date = datetime.today() - timedelta(1)
+            date = datetime.today() - timedelta(10)
             date = date.strftime("%Y-%m-%dT%H:%M:%S")
         else:
             date = datetime.strptime(self.last_verified, "%Y-%m-%dT%H:%M:%S")
@@ -96,6 +105,37 @@ def get_user(slack_user):
 
     return user
 
+class TogglEntry(object):
+    def __init__ (self, json):
+        self.start = json['start']
+        self.stop = json['end']
+        self.description = json['description']
+        self.duration = json['duration']
+
+    def short_slack_format(self):
+        return { "fields": [
+                 { "value": self.description,
+                   "short": true},
+                 { "value": self.duration,
+                   "short": true } ] }
+
+    def long_slack_format(self):
+        return { "fields": [
+                 { "title": "Description",
+                   "value": self.description,
+                   "short": true},
+                 { "title": "Duration",
+                   "value": self.duration,
+                   "short": true } ] }
+
+def handle_entries(entries):
+    entries = json.loads(entries)
+    attachments = []
+    for entry in entries:
+        te = ToggleEntry(entry)
+        attachments.append(te.short_slack_format)
+    return attachments
+
 def hello_handler(command):
     user = command['user_name'][0]
     channel = command['channel_name'][0]
@@ -106,7 +146,7 @@ def hello_handler(command):
             bot_user = get_user(user)
             entries = bot_user.get_toggl_entries()
             if len(entries) > 0:
-                entry_description = '#entries: ' + len(entries) + ' ' + entries[0]['description']
+                entry_description = '#entries: ' + str(len(entries)) + ' ' + entries[0]['description']
             else:
                 entry_description = "no entries"
             return { 'response_type': 'in_channel',
