@@ -23,11 +23,11 @@ def lambda_handler(event, context):
         return hello_handler(command)
 
 def handle_trigger(event):
-    slack_user = event['user']
+    slack_user = event['slack_user']
     user = get_user(slack_user)
     json_entries = user.get_toggl_entries()
     attachments = handle_entries(json_entries)
-    payload = json.dumps({"text": "hey",
+    payload = json.dumps({"text": "Here's a summary of today's entries",
                           "icon_emoji": ":timer_clock:",
                           "attachments": attachments})
     webhook = "https://hooks.slack.com/services/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"
@@ -108,32 +108,31 @@ def get_user(slack_user):
 class TogglEntry(object):
     def __init__ (self, json):
         self.start = json['start']
-        self.stop = json['end']
-        self.description = json['description']
+        self.stop = json['stop']
+        self.description = json.get('description', 'no description')
         self.duration = json['duration']
 
     def short_slack_format(self):
         return { "fields": [
                  { "value": self.description,
-                   "short": true},
+                   "short": "true"},
                  { "value": self.duration,
-                   "short": true } ] }
+                   "short": "true" } ] }
 
     def long_slack_format(self):
         return { "fields": [
                  { "title": "Description",
-                   "value": self.description,
-                   "short": true},
+                   "value": "hey", #self.description,
+                   "short": "true"},
                  { "title": "Duration",
-                   "value": self.duration,
-                   "short": true } ] }
+                   "value": "what", #self.duration,
+                   "short": "true" } ] }
 
 def handle_entries(entries):
-    entries = json.loads(entries)
     attachments = []
     for entry in entries:
-        te = ToggleEntry(entry)
-        attachments.append(te.short_slack_format)
+        te = TogglEntry(entry)
+        attachments.append(te.short_slack_format())
     return attachments
 
 def hello_handler(command):
