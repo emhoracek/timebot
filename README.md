@@ -20,7 +20,7 @@ reminders.
 reminder set, your reminder will be changed to the new time. (You can't set a 
 reminder for more than once a day.)
 
-`/timebot vacation 3 days` will pause reminders for 3 days. (Useful for vacation.)
+`/timebot vacation 3 days` will pause reminders for 3 days.
 
 `/timebot bankrupt` will declare Toggl bankruptcy. Timebot will go back to only 
 showing entries from the last 24 hours.
