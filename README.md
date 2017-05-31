@@ -4,7 +4,7 @@ This is a bot that reminds you to log hours, so your teammates don't have to!
 
 ## Setup
 
-`/timebot add YOUR\_TOGGL\_KEY` will setup up your Toggl. You can get your API
+`/timebot add YOUR_TOGGL_KEY` will setup up your Toggl. You can get your API
 token from [your Toggl profile](https://toggl.com/app/profile).
 
 Next, go to the 
