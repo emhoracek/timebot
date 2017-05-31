@@ -56,14 +56,12 @@ Timebot will show the entries again and ask for confirmation, just like
 Timebot only lists the description and duration of each entry. Timebot will also
 highlight long periods of time between entries and very short entries.
 
-|------------------------|
 | Description | Duration |
-|------------------------|
+|-------------|----------|
 | Some entry  | 1:30     |
-| Some entry  | 0:05     |
+| Some entry  | 0:05 *** |
 |     **Long gap**       |
 | Another     | 1:30     |
-|------------------------|
 
 ## In-Slack help
 
