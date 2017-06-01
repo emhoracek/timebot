@@ -110,29 +110,34 @@ class TogglEntry(object):
         self.start = json['start']
         self.stop = json['stop']
         self.description = json.get('description', 'no description')
-        self.duration = json['duration']
+        self.duration = timedelta(seconds=int(json['duration']))
 
     def short_slack_format(self):
         return { "fields": [
                  { "value": self.description,
                    "short": "true"},
-                 { "value": self.duration,
+                 { "value": str(self.duration),
                    "short": "true" } ] }
 
     def long_slack_format(self):
         return { "fields": [
                  { "title": "Description",
-                   "value": "hey", #self.description,
+                   "value": self.description,
                    "short": "true"},
                  { "title": "Duration",
-                   "value": "what", #self.duration,
+                   "value": str(self.duration),
                    "short": "true" } ] }
 
-def handle_entries(entries):
+def entry_attachments(entries):
     attachments = []
-    for entry in entries:
-        te = TogglEntry(entry)
-        attachments.append(te.short_slack_format())
+    if len(entries) > 0:
+        first_entry = entries.pop()
+        te = TogglEntry(first_entry)
+        attachments.append(te.long_slack_format())
+
+        for entry in entries:
+            te = TogglEntry(entry)
+            attachments.append(te.short_slack_format())
     return attachments
 
 def hello_handler(command):
@@ -144,20 +149,15 @@ def hello_handler(command):
         if text == 'entries':
             bot_user = get_user(user)
             entries = bot_user.get_toggl_entries()
-            if len(entries) > 0:
-                entry_description = '#entries: ' + str(len(entries)) + ' ' + entries[0]['description']
-            else:
-                entry_description = "no entries"
             return { 'response_type': 'in_channel',
-                     'text': 'what entries, ' + bot_user.show() + ' ' + entry_description }
+                     'text': "Here are your entries:",
+                     'attachments': entry_attachments(entries) }
         else:
             api_key = text
             user = User(user, api_key, "never", "never")
             user.create_user()
             return { 'response_type': 'in_channel',
                      'text': 'User created!' }
-                #    'attachments': [ generate_tweet_attachment(str(uid), text) ] }`
     else:
         return { 'response_type': 'ephemeral',
                  'text': "Hello world" }
-
