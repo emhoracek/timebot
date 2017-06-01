@@ -145,19 +145,18 @@ def hello_handler(command):
     channel = command['channel_name'][0]
     text = command.get('text', '')[0]
 
-    if text != '':
-        if text == 'entries':
-            bot_user = get_user(user)
-            entries = bot_user.get_toggl_entries()
-            return { 'response_type': 'in_channel',
-                     'text': "Here are your entries:",
-                     'attachments': entry_attachments(entries) }
-        else:
-            api_key = text
-            user = User(user, api_key, "never", "never")
-            user.create_user()
-            return { 'response_type': 'in_channel',
-                     'text': 'User created!' }
+    if text == 'entries':
+        bot_user = get_user(user)
+        entries = bot_user.get_toggl_entries()
+        return { 'response_type': 'in_channel',
+                 'text': "Here are your entries:",
+                 'attachments': entry_attachments(entries) }
+    elif text.startswith('add '):
+        api_key = text.split(' ')[1]
+        user = User(user, api_key, "never", "never")
+        user.create_user()
+        return { 'response_type': 'in_channel',
+                 'text': 'User created!' }
     else:
         return { 'response_type': 'ephemeral',
                  'text': "Hello world" }
