@@ -5,16 +5,16 @@ This is a bot that reminds you to log hours, so your teammates don't have to!
 ## Setup
 
 `/timebot add YOUR_TOGGL_KEY` will setup up your Toggl. You can get your API
-token from [your Toggl profile](https://toggl.com/app/profile).
+token from [your Toggl profile](https://toggl.com/app/profile). (DONE)
 
 Next, go to the 
 [Incoming Webhooks](https://positiondev.slack.com/apps/A0F7XDUAZ-incoming-webhooks) 
 page in Position's Slack settings. Click the green "Add Configuration" 
 button. Then, in the "Post to Channel" drop-down, select your own Direct Messages
-channel. Copy the webhook URL.
+channel. Copy the webhook URL. 
 
 `/timebot hook http://slack.com/yourwebhook` will set up your webhook for
-reminders.
+reminders. (DONE)
 
 `/timebot remind 5pm` will set a reminder for 5pm daily. If you already had a
 reminder set, your reminder will be changed to the new time. (You can't set a 
@@ -24,10 +24,10 @@ reminder for more than once a day.)
 
 Use `/timebot verify` to verify that your entries are up-to-date. Timebot will
 show you all your entries since the last time you verified. Click "yes" to
-confirm.
+confirm. 
 
 `/timebot entries` will show your entries from the last time you verified the
-entries.
+entries. (DONE)
 
 `/timebot vacation 3 days` will pause reminders for 3 days.
 
