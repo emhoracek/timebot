@@ -26,20 +26,20 @@ def handle_trigger(event):
     slack_user = event['slack_user']
     user = get_user(slack_user)
     json_entries = user.get_toggl_entries()
-    attachments = handle_entries(json_entries)
+    attachments = entry_attachments(json_entries)
     payload = json.dumps({"text": "Here's a summary of today's entries",
                           "icon_emoji": ":timer_clock:",
                           "attachments": attachments})
-    webhook = "https://hooks.slack.com/services/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"
-    req = urllib2.Request(webhook, payload)
+    req = urllib2.Request(user.webhook, payload)
     urllib2.urlopen(req).read()
 
 class User(object):
-    def __init__(self, slack_user, toggl_api_key, last_verified, last_checked):
+    def __init__(self, slack_user, toggl_api_key, last_verified, last_checked, webhook):
         self.slack_user = slack_user
         self.toggl_api_key = toggl_api_key
         self.last_verified = last_verified
         self.last_checked = last_checked
+        self.webhook = webhook
 
     def create_user(self):
         dynamodb.put_item(TableName='timebot_users',
@@ -68,6 +68,12 @@ class User(object):
                              ExpressionAttributeValues={':date': {'S': now_string }})
         return "Success!"
 
+    def update_webhook(self, webhook_url):
+        dynamodb.update_item(TableName='timebot_users',
+                             Key={'slack_user': {'S': self.slack_user} },
+                             UpdateExpression="SET webhook=:webhook",
+                             ExpressionAttributeValues={':webhook': {'S': webhook_url }})
+
     def show(self):
         return self.slack_user + ' ' + self.last_checked + ' ' + self.last_verified
 
@@ -93,15 +99,16 @@ class User(object):
 def get_user(slack_user):
     resp = dynamodb.get_item(TableName='timebot_users',
                              Key={ 'slack_user': { 'S': slack_user } },
-                             ProjectionExpression='slack_user, toggl_api_key, last_verified, last_checked')
+                             ProjectionExpression='slack_user, toggl_api_key, last_verified, last_checked, webhook')
     item = resp['Item']
 
     user = item['slack_user']['S']
     api_key = item['toggl_api_key']['S']
     verified = item['last_verified']['S']
     checked = item['last_checked']['S']
+    webhook = item.get('webhook',{'S': 'none'}).get('S')
 
-    user = User(user, api_key, verified, checked)
+    user = User(user, api_key, verified, checked, webhook)
 
     return user
 
@@ -151,9 +158,15 @@ def hello_handler(command):
         return { 'response_type': 'in_channel',
                  'text': "Here are your entries:",
                  'attachments': entry_attachments(entries) }
+    elif text.startswith('hook '):
+        webhook_url = text.split(' ')[1]
+        bot_user = get_user(user)
+        bot_user.update_webhook(webhook_url)
+        return { 'response_type': 'in_channel',
+                 'text': 'Webhook updated!'}
     elif text.startswith('add '):
         api_key = text.split(' ')[1]
-        user = User(user, api_key, "never", "never")
+        user = User(user, api_key, "never", "never", "none")
         user.create_user()
         return { 'response_type': 'in_channel',
                  'text': 'User created!' }
