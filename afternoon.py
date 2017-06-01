@@ -17,7 +17,7 @@ def lambda_handler(event, context):
 
     if 'trigger' in event:
         handle_trigger(event)
-    else: 
+    else:
         bodyJson = event['body-json']
         command = urlparse.parse_qs(bodyJson, keep_blank_values = True)
         return hello_handler(command)
@@ -84,7 +84,7 @@ class User(object):
 
     def since_last_verified(self):
         if self.last_verified == "never":
-            date = datetime.today() - timedelta(10)
+            date = datetime.today() - timedelta(1)
             date = date.strftime("%Y-%m-%dT%H:%M:%S")
         else:
             date = datetime.strptime(self.last_verified, "%Y-%m-%dT%H:%M:%S")
