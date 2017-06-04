@@ -20,7 +20,22 @@ def lambda_handler(event, context):
     else:
         bodyJson = event['body-json']
         command = urlparse.parse_qs(bodyJson, keep_blank_values = True)
-        return hello_handler(command)
+        print(command['payload'][0])
+        if 'payload' in command:
+            payload = json.loads(command['payload'][0])
+            return handle_button(payload)
+        else:
+            return hello_handler(command)
+
+def handle_button(command):
+    #print(command['original_message']['attachments'])
+    slack_user = command['user']['name']
+    user = get_user(slack_user)
+    if command['callback_id'] == 'verify' and command['actions'][0]['value'] == 'yes':
+        user.update_latest()
+        return { "text": "Verified!", "replace_original": False }
+    else:
+        return "????"
 
 def handle_trigger(event):
     slack_user = event['slack_user']
@@ -93,7 +108,9 @@ class User(object):
             date = datetime.today() - timedelta(1)
             date = date.strftime("%Y-%m-%dT%H:%M:%S")
         else:
-            date = datetime.strptime(self.last_verified, "%Y-%m-%dT%H:%M:%S")
+            date = self.last_verified
+            #date = datetime.strptime(self.last_verified, "%Y-%m-%dT%H:%M:%S")
+            #date = date.strftime("%Y-%m-%dT%H:%M:%S")
         return date + "-05:00"
 
 def get_user(slack_user):
@@ -145,7 +162,33 @@ def entry_attachments(entries):
         for entry in entries:
             te = TogglEntry(entry)
             attachments.append(te.short_slack_format())
+    attachments.append(verify_attachment())
     return attachments
+
+
+def long_slack_format():
+    return { "fields": [
+             { "title": "Description",
+               "value": 'hey',
+               "short": "true"},
+             { "title": "Duration",
+               "value": 'yo',
+               "short": "true" } ] }
+
+def verify_attachment():
+    return { "text": "Is this correct?",
+             "fallback": "Use `/timebot yes` or `/timebot no`",
+            "callback_id": "verify",
+            "color": "#3AA3E3",
+            "attachment_type": "default",
+            'actions': [ {'name': 'yes',
+                           'text': 'Yes',
+                           'type': 'button',
+                           'value': 'yes'},
+                          {'name': 'no',
+                           'text': 'No',
+                           'type': 'button',
+                           'value': 'no'} ] }
 
 def hello_handler(command):
     user = command['user_name'][0]
